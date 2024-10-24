@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Memory Game</title>
+    <style>
+        @font-face {
+            font-family: 'Superboom';
+            src: url('/fonts/Superboom.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #fce7f3;
+            font-family: 'Superboom', sans-serif;
+        }
+
+        .container {
+            text-align: center;
+            padding: 1rem;
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .screen {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: none;
+        }
+
+        .screen.active {
+            opacity: 1;
+            display: block;
+        }
+
+        .outlined-text {
+            color: white;
+            text-shadow: -1px -1px 0 #620C0C,
+                         1px -1px 0 #620C0C,
+                        -1px 1px 0 #620C0C,
+                         1px 1px 0 #620C0C;
+        }
+
+        .title {
+            font-size: clamp(2rem, 5vw, 2.5rem);
+            font-weight: bold;
+            margin-bottom: 2rem;
+        }
+
+        .rules {
+            font-size: clamp(1rem, 3vw, 1.25rem);
+            margin-bottom: 2rem;
+            text-align: left;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            list-style-position: inside;
+            padding: 0 1rem;
+        }
+
+        .rules li {
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .button {
+            padding: 1rem 2rem;
+            background-color: #ec4899;
+            border: none;
+            border-radius: 1.5rem;
+            font-size: clamp(1.25rem, 4vw, 1.5rem);
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Superboom', sans-serif;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .button:hover {
+            transform: scale(1.05);
+        }
+
+        .button:active {
+            transform: scale(0.95);
+        }
+
+        .score {
+            font-size: clamp(2rem, 6vw, 3rem);
+            margin-bottom: 1rem;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: clamp(0.5rem, 3vw, 1.5rem);
+            margin: 2rem auto;
+            max-width: 500px;
+            padding: 0 1rem;
+        }
+
+        .color-button {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: clamp(1rem, 3vw, 1.5rem);
+            border: clamp(5px, 2vw, 10px) solid white;
+            cursor: pointer;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transform: perspective(1000px) rotateX(5deg);
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .color-button:hover {
+            transform: perspective(1000px) rotateX(5deg) scale(1.05);
+        }
+
+        .color-button:active {
+            transform: perspective(1000px) rotateX(5deg) scale(0.95);
+        }
+
+        .color-button.blinking {
+            opacity: 0.5;
+        }
+
+        /* Additional responsive adjustments */
+        @media (max-width: 480px) {
+            .container {
+                padding: 0.5rem;
+            }
+
+            .title {
+                margin-bottom: 1.5rem;
+            }
+
+            .rules {
+                padding: 0 0.5rem;
+            }
+
+            .color-grid {
+                gap: 0.5rem;
+                padding: 0 0.5rem;
+            }
+
+            .button {
+                padding: 0.75rem 1.5rem;
+            }
+        }
+
+        /* For very small screens */
+        @media (max-width: 320px) {
+            .rules {
+                font-size: 0.9rem;
+            }
+
+            .score {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="rulesScreen" class="screen active">
+            <div class="outlined-text title">HERE ARE THE RULES:</div>
+            <ol class="rules outlined-text">
+                <li>START THE GAME BY PRESSING THE START BUTTON.</li>
+                <li>ANY OF THE 4 COLOUR WILL BLINK.</li>
+                <li>CLICK THE SAME COLOUR ONCE.</li>
+                <li>ANY OF THE 4 COLOUR WILL BLINK.</li>
+                <li>CLICK THE 1ST BLINKED COLOUR AND THEN THE NEWLY BLINKED COLOUR.</li>
+                <li>CONTINUE THE PROCESS BY KEEPING THE SEQUENCE IN MIND.</li>
+            </ol>
+            <button class="button outlined-text" onclick="startGame()">START</button>
+        </div>
+
+        <div id="gameScreen" class="screen">
+            <div class="outlined-text score">CURRENT SCORE: <span id="currentScore">0</span></div>
+            <div class="outlined-text score">HI-SCORE: <span id="highScore">0</span></div>
+            <div class="color-grid">
+                <button class="color-button" style="background-color: orange;" data-color="orange"></button>
+                <button class="color-button" style="background-color: blue;" data-color="blue"></button>
+                <button class="color-button" style="background-color: green;" data-color="green"></button>
+                <button class="color-button" style="background-color: black;" data-color="black"></button>
+            </div>
+        </div>
+
+        <div id="gameOverScreen" class="screen">
+            <div class="outlined-text title">GAME OVER</div>
+            <div class="outlined-text score">SCORE: <span id="finalScore">0</span></div>
+            <button class="button outlined-text" onclick="startGame()">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        const COLORS = ['orange', 'blue', 'green', 'black'];
+        let sequence = [];
+        let playerSequence = [];
+        let currentScore = 0;
+        let highScore = 0;
+        let isBlinking = false;
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function updateScores() {
+            document.getElementById('currentScore').textContent = currentScore;
+            document.getElementById('highScore').textContent = highScore;
+            document.getElementById('finalScore').textContent = currentScore;
+        }
+
+        async function blinkColor(color) {
+            isBlinking = true;
+            const button = document.querySelector(`[data-color="${color}"]`);
+            button.classList.add('blinking');
+            await new Promise(resolve => setTimeout(resolve, 300));
+            button.classList.remove('blinking');
+            await new Promise(resolve => setTimeout(resolve, 300));
+            isBlinking = false;
+        }
+
+        async function showSequence() {
+            const newColor = sequence[sequence.length - 1];
+            await blinkColor(newColor);
+        }
+
+        function addToSequence() {
+            const newColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+            sequence.push(newColor);
+        }
+
+        function startGame() {
+            sequence = [];
+            playerSequence = [];
+            currentScore = 0;
+            showScreen('gameScreen');
+            updateScores();
+            addToSequence();
+            showSequence();
+        }
+
+        function handleGameOver() {
+            highScore = Math.max(highScore, currentScore);
+            updateScores();
+            showScreen('gameOverScreen');
+        }
+
+        function handleColorClick(color) {
+            if (isBlinking) return;
+
+            playerSequence.push(color);
+            
+            if (color !== sequence[playerSequence.length - 1]) {
+                handleGameOver();
+                return;
+            }
+
+            if (playerSequence.length === sequence.length) {
+                currentScore++;
+                playerSequence = [];
+                updateScores();
+                addToSequence();
+                setTimeout(showSequence, 500);
+            }
+        }
+
+        // Set up click handlers for color buttons
+        document.querySelectorAll('.color-button').forEach(button => {
+            button.addEventListener('click', () => {
+                handleColorClick(button.dataset.color);
+            });
+        });
+
+        // Show rules screen initially
+        showScreen('rulesScreen');
+    </script>
+</body>
+</html>
